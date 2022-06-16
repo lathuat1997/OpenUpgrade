@@ -131,6 +131,17 @@ def _check_vehicle_fuel_cost_have_no_type(env):
             return True
         return False
 
+
+def set_module_viin_fleet_to_install(env):
+    openupgrade.logged_query(
+        env.cr,
+        """
+        UPDATE ir_module_module
+        SET state='to install'
+        WHERE name = 'viin_fleet' AND state='uninstalled'
+        """
+    )
+
 @openupgrade.migrate()
 def migrate(env, version):
     fill_fleet_vehicle_log_contract_fields(env)
@@ -160,3 +171,6 @@ def migrate(env, version):
         other_service_type = _generate_other_service_type(env)
     _move_data_from_cost_to_service(env, other_service_type)
     _move_data_from_fuel_to_service(env, fuel_service_type)
+
+    # Install viin_fleet module
+    set_module_viin_fleet_to_install(env)
