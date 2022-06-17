@@ -20,7 +20,7 @@ def _move_price_unit_from_fuel_to_service(env):
         SET quantity = f.liter,
             price_unit = f.price_per_liter
         FROM fleet_vehicle_log_fuel f
-        WHERE s.cost_id = f.cost_id;
+        WHERE s.cost_id = f.cost_id and s.amount <> 0;
         """
     )
 

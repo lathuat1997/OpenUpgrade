@@ -71,7 +71,7 @@ def recompute_fleet_vehicle_log_contract_name(env):
 
 
 def _move_data_from_cost_to_service(env):
-    other_service_type = None
+    other_service_type_id = None
     env.cr.execute("""
     SELECT *
     FROM fleet_vehicle_cost c
@@ -79,23 +79,24 @@ def _move_data_from_cost_to_service(env):
     """
     )
     if env.cr.fetchone():
-        orther_service_type = env['fleet.service.type'].create({
+        other_service_type_id = env['fleet.service.type'].create({
             'name': _('Other'),
             'category': 'service'
-        })
+        }).id
     openupgrade.logged_query(
         env.cr,"""
         INSERT INTO fleet_vehicle_log_services (cost_id, vehicle_id, amount, date, description, create_uid, create_date,
-        write_uid, write_date, active, service_type_id, odometer_id, company_id)
-        SELECT id, vehicle_id, amount, date, description, create_uid, create_date, write_uid, write_date, True, COALESCE(cost_subtype_id, {0}),
-        odometer_id, company_id
+        write_uid, write_date, active, service_type_id, odometer_id, company_id, state)
+        SELECT id, vehicle_id, amount, date, description, create_uid, create_date, write_uid, write_date, True, COALESCE(cost_subtype_id, %(type_id)s),
+        odometer_id, company_id, 'todo'
         FROM fleet_vehicle_cost c
         WHERE c.cost_type = 'other';
-        """ .format(orther_service_type.id)
-    )
+        """, {
+            "type_id": other_service_type_id,
+        })
 
 def _move_data_from_fuel_to_service(env):
-    fuel_service_type = None
+    fuel_service_type_id = None
     env.cr.execute("""
     SELECT *
     FROM fleet_vehicle_cost c join fleet_vehicle_log_fuel f ON c.id = f.cost_id
@@ -103,19 +104,20 @@ def _move_data_from_fuel_to_service(env):
     """
     )
     if env.cr.fetchone():
-        fuel_service_type = env['fleet.service.type'].create({
+        fuel_service_type_id = env['fleet.service.type'].create({
             'name': _('Refueling'),
             'category': 'service'
-        })
+        }).id
     openupgrade.logged_query(
         env.cr,"""
         INSERT INTO fleet_vehicle_log_services (cost_id, vehicle_id, amount, date, description, create_uid, create_date,
-            write_uid, write_date, active, service_type_id, odometer_id, company_id)
-        SELECT c.id, c.vehicle_id, c.amount, c.date, c.description, c.create_uid, c.create_date, c.write_uid, c.write_date, True, COALESCE(c.cost_subtype_id, {0}),
-         c.odometer_id, c.company_id
+            write_uid, write_date, active, service_type_id, odometer_id, company_id, state)
+        SELECT c.id, c.vehicle_id, c.amount, c.date, c.description, c.create_uid, c.create_date, c.write_uid, c.write_date, True, COALESCE(c.cost_subtype_id, %(type_id)s),
+         c.odometer_id, c.company_id, 'todo'
         FROM fleet_vehicle_cost c join fleet_vehicle_log_fuel f ON c.id = f.cost_id
-        """.format(fuel_service_type.id)
-    )
+        """, {
+            "type_id": fuel_service_type_id,
+        })
 
 
 def set_module_viin_fleet_to_install(env):
@@ -147,7 +149,7 @@ def migrate(env, version):
         ],
     )
     recompute_fleet_vehicle_log_contract_name(env)
-    
+
     # Move data from fleet_vehicle_cost and fleet_vehicle_log_fuel to fleet_vehicle_log_services
     _move_data_from_cost_to_service(env)
     _move_data_from_fuel_to_service(env)
