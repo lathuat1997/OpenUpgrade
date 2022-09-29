@@ -49,7 +49,7 @@ def _prepare_in_svl_vals(move, quantity, unit_cost, product, is_dropship):
     return vals
 
 
-def _prepare_out_svl_vals(move, quantity, unit_cost, product, value=0.0, cost_method=False):
+def _prepare_out_svl_vals(move, quantity, unit_cost, product, value=0.0):
     # Quantity is negative for out valuation layers.
     quantity = -quantity
     vals = _prepare_common_svl_vals(move, product)
@@ -60,7 +60,7 @@ def _prepare_out_svl_vals(move, quantity, unit_cost, product, value=0.0, cost_me
         "remaining_qty": 0.0,
         "remaining_value": 0.0,
     })
-    if cost_method == 'fifo':
+    if product.cost_method == 'fifo':
         vals.update({
             "value": value,
             "unit_cost": value/quantity if quantity else 0,
@@ -216,7 +216,7 @@ def generate_stock_valuation_layer(env):
                     if product.cost_method == 'fifo':
                         svl_vals = _prepare_out_svl_vals(
                             move, move["product_qty"], abs(move["price_unit"]), product,
-                            value=move["value"], cost_method=product.cost_method)
+                            value=move["value"])
                     else:
                         valuation_price_unit = previous_price
                         if product.cost_method == 'standard':
